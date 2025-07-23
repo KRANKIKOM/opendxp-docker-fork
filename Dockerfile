@@ -102,15 +102,14 @@ RUN set -eux; \
     build-install.sh; \
     \
     DPKG_ARCH="$(dpkg --print-architecture)"; \
-    echo "deb https://www.deb-multimedia.org bookworm main non-free" > /etc/apt/sources.list.d/deb-multimedia.list; \
-    apt-get update -oAcquire::AllowInsecureRepositories=true; \
-    apt-get install -y --allow-unauthenticated deb-multimedia-keyring; \
-    apt-get update; \
+    echo "deb https://deb.debian.org/debian bookworm-backports main" > /etc/apt/sources.list.d/backports.list; \
+    apt-get update;  \
+    \
+    apt-get install -y -t bookworm-backports ffmpeg;  \
     \
     # tools used by OpenDXP
     apt-get install -y \
         exiftool \
-        ffmpeg \
         ghostscript \
         git \
         graphviz \
