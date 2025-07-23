@@ -119,7 +119,7 @@ jobs:
         steps:
             
             -   name: Login to DockerHub Registry
-                run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+                run: echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
             -   name: Download aggregated tags
                 uses: actions/download-artifact@v4
