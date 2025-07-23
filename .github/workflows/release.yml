@@ -22,8 +22,8 @@ jobs:
                     - ubuntu-22.04
                     - ubuntu-22.04-arm
                 build:
-                    - { tag: '1.x', php: '8.2', distro: bookworm, version-override: "v1-dev", latest-tag: false }
-                    - { tag: '1.x', php: '8.3', distro: bookworm, version-override: "v1-dev", latest-tag: false }
+                    - { tag: '1.x', php: '8.2', distro: bookworm, version-override: "v1-dev", latest-tag: true }
+                    - { tag: '1.x', php: '8.3', distro: bookworm, version-override: "v1-dev", latest-tag: true }
 
         steps:
             -   uses: actions/checkout@v4
