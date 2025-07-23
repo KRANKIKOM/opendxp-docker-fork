@@ -48,11 +48,8 @@ jobs:
 
                     echo ${{ matrix.runner}}
 
-                    if [[ "${{ matrix.build.tag }}" =~ ^v?1.[0-9x]+$ ]]; then
-                        imageVariants=("fpm" "debug" "supervisord")
-                    else
-                        imageVariants=("min" "default" "max" "debug" "supervisord")
-                    fi
+                    imageVariants=("min" "default" "max" "debug" "supervisord")
+                    
                     for imageVariant in ${imageVariants[@]}; do
                         echo "Building image variant $imageVariant"
                         DOCKER_PLATFORMS=linux/amd64,linux/arm64
@@ -64,7 +61,7 @@ jobs:
                             VERSION="$VERSION_OVERRIDE"
                         fi
                         PHP_SUB_VERSION=$(docker run -i --rm php:${{ matrix.build.php }}-fpm-${{ matrix.build.distro }} php -r 'echo PHP_VERSION;')
-                        if [ "$imageVariant" = "fpm"  ] || [ "$imageVariant" = "default"  ]; then
+                        if [ "$imageVariant" = "default"  ]; then
                             BASE_TAG="php${{ matrix.build.php }}"
                             BASE_TAG_DETAILED="php${PHP_SUB_VERSION}"
                         else
