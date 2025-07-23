@@ -34,9 +34,6 @@ jobs:
             -   name: Login to DockerHub Registry
                 run: echo ${{ secrets.DOCKERHUB_TOKEN }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
 
-            -   name: Login to GitHub Container Registry
-                run: echo ${{ secrets.IMAGES_REPO_TOKEN }} | docker login ghcr.io -u ${{ secrets.IMAGES_REPO_USERNAME }} --password-stdin
-
             -   name: Configure and build images
                 id: vars
                 env:
@@ -56,11 +53,14 @@ jobs:
                         PHP_VERSION=${{ matrix.build.php }}
                         DEBIAN_VERSION="${{ matrix.build.distro }}"
                         VERSION="${{ matrix.build.tag }}"
+                    
                         # for the latest dev branch we use "dev" as the version and not the name of the branch
                         if [ ! -z "$VERSION_OVERRIDE" ]; then
                             VERSION="$VERSION_OVERRIDE"
                         fi
+                    
                         PHP_SUB_VERSION=$(docker run -i --rm php:${{ matrix.build.php }}-fpm-${{ matrix.build.distro }} php -r 'echo PHP_VERSION;')
+                    
                         if [ "$imageVariant" = "default"  ]; then
                             BASE_TAG="php${{ matrix.build.php }}"
                             BASE_TAG_DETAILED="php${PHP_SUB_VERSION}"
@@ -68,35 +68,23 @@ jobs:
                             BASE_TAG="php${{ matrix.build.php }}-$imageVariant"
                             BASE_TAG_DETAILED="php${PHP_SUB_VERSION}-$imageVariant"
                         fi
-                        # DEBUG / TEST
-                        #BASE_TAG="testv3-$BASE_TAG"
-                        #BASE_TAG_DETAILED="testv3-$BASE_TAG_DETAILED"
 
                         TAG="${BASE_TAG}-${VERSION}-${ARCH_TAG}"
                         TAG_DETAILED="${BASE_TAG_DETAILED}-${VERSION}-${ARCH_TAG}"
 
-                        GHCR_TAG="ghcr.io/open-dxp/opendxp:${TAG}"
-                        GHCR_TAG_DETAILED="ghcr.io/open-dxp/opendxp:${TAG_DETAILED}"
-
                         TAGS="--tag ${IMAGE_NAME}:${TAG}"
                         TAGS="$TAGS --tag ${IMAGE_NAME}:${TAG_DETAILED}"
-
-                        TAGS="$TAGS --tag $GHCR_TAG"
-                        TAGS="$TAGS --tag $GHCR_TAG_DETAILED"
 
                         # Tag latest with Version build too
                         if [ "true" = "${{ matrix.build.latest-tag }}" ]; then
                             TAGS="$TAGS --tag ${IMAGE_NAME}:${BASE_TAG}-latest-${ARCH_TAG}"
-                            TAGS="$TAGS --tag ghcr.io/open-dxp/opendxp:${BASE_TAG}-latest-${ARCH_TAG}"
                         fi
                     
                         # Create tag for major version
                         if [[ $VERSION =~ ^v[0-9]+.[0-9]+$ ]]; then
                             VERSION_MAJOR="${VERSION//.[0-9]/}"
                             TAG_MAJOR="${BASE_TAG}-${VERSION_MAJOR}-${ARCH_TAG}"
-                            GHCR_TAG_MAJOR="ghcr.io/open-dxp/opendxp:${TAG_MAJOR}"
                             TAGS="$TAGS --tag ${IMAGE_NAME}:${TAG_MAJOR}"
-                            TAGS="$TAGS --tag $GHCR_TAG_MAJOR"
                         fi
 
                         docker build --output "type=image,push=true" \
@@ -133,9 +121,6 @@ jobs:
             
             -   name: Login to DockerHub Registry
                 run: echo ${{ secrets.DOCKERHUB_PASSWORD }} | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-
-            -   name: Login to GitHub Container Registry
-                run: echo ${{ secrets.IMAGES_REPO_TOKEN }} | docker login ghcr.io -u ${{ secrets.IMAGES_REPO_USERNAME }} --password-stdin
 
             -   name: Download aggregated tags
                 uses: actions/download-artifact@v4
