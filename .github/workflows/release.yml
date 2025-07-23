@@ -12,8 +12,8 @@ env:
     IMAGE_NAME: open-dxp/opendxp
 
 jobs:
-    build-php:
-        name: "Build Images"
+    build-image:
+        name: Build Images
         runs-on: ${{ matrix.runner }}
         if: github.repository == 'open-dxp/docker'
         strategy:
@@ -131,7 +131,7 @@ jobs:
         
     process-tags:
         runs-on: ubuntu-22.04
-        needs: build-php
+        needs: build-image
         steps:
             
             -   name: Login to DockerHub Registry
