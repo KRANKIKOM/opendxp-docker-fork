@@ -1,0 +1,66 @@
+name: Docker TEST
+
+on:
+    workflow_dispatch:
+    pull_request:
+
+env:
+    DOCKER_BUILDKIT: 1
+    IMAGE_NAME: open-dxp/opendxp
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                include:
+                    - { php: '8.3', distro: bookworm }
+                    - { php: '8.4', distro: bookworm }
+        steps:
+            -   uses: actions/checkout@v2
+            -   name: Build Image
+                run: |
+                    set -ex
+
+                    imageVariants=("min" "default" "max" "debug" "supervisord")
+
+                    for imageVariant in ${imageVariants[@]}; do
+                        docker build --tag opendxp-image \
+                            --target="opendxp_php_$imageVariant" \
+                            --build-arg PHP_VERSION="${{ matrix.php }}" \
+                            --build-arg DEBIAN_VERSION="${{ matrix.distro }}" \
+                            .
+
+                        if [ "$imageVariant" != "min" ]; then
+                            # Test that Imagick is installed
+                            docker run --rm opendxp-image sh -c 'php -m | grep imagick'
+                        fi
+                    
+                        if [ "$imageVariant" == "debug" ]; then
+                            # Make sure xdebug is installed and configured on debug-build
+                            docker run --rm opendxp-image sh -c 'php -m | grep xdebug'
+                            docker run --rm opendxp-image test -f /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+                            # Check if entrypoint did it's job and generated xdebug configuration
+                            docker run --rm opendxp-image php -r 'assert("PHPSTORM" === ini_get("xdebug.idekey"));'
+                            docker run --rm -e XDEBUG_HOST=pim.co.re opendxp-image sh -c 'php -i | grep "xdebug.*pim\.co\.re"'
+                        else
+                            # Make sure xdebug is neither activated nor configured on non-debug build
+                            docker run --rm opendxp-image sh -c '! php -m | grep xdebug'
+                            docker run --rm opendxp-image test ! -f /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+                        fi
+
+                        docker run --rm opendxp-image composer create-project open-dxp/skeleton:2025.x-dev opendxp --no-scripts
+
+                        if [ "$imageVariant" != "min" ]; then
+                            docker run -v "$(pwd)/.github/files":/var/www/html --rm opendxp-image php test_heif.php
+                        fi
+                    done
+            -   name: Run Trivy vulnerability scanner
+                uses: aquasecurity/trivy-action@master
+                with:
+                    image-ref: 'opendxp-image'
+                    format: 'table'
+                    exit-code: '1'
+                    ignore-unfixed: true
+                    vuln-type: 'os,library'
+                    severity: 'CRITICAL,HIGH'
